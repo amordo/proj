@@ -2,8 +2,8 @@ import gradio as gr
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import torch
 
-# Load mT5-base model for Swedish grammar correction
-MODEL_NAME = "google/mt5-base"
+# Load Flan-T5-base model for Swedish grammar correction (better for instruction-following)
+MODEL_NAME = "google/flan-t5-base"
 print(f"Loading model: {MODEL_NAME}")
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
@@ -82,7 +82,7 @@ def format_prompt(ex1_inc, ex1_corr, ex1_rule, ex2_inc, ex2_corr, ex2_rule,
                   ex3_inc, ex3_corr, ex3_rule, query):
     """Format the in-context learning prompt for grammar correction."""
     
-    prompt = "Correct the Swedish grammar errors based on the examples below.\n\n"
+    prompt = "Task: Correct Swedish grammar based on the pattern shown in examples.\n\n"
     
     # Add examples
     if ex1_inc and ex1_corr:
@@ -107,9 +107,9 @@ def format_prompt(ex1_inc, ex1_corr, ex1_rule, ex2_inc, ex2_corr, ex2_rule,
         prompt += "\n"
     
     # Add the query
-    prompt += f"Now correct this sentence:\n"
+    prompt += f"Now correct this sentence following the same pattern:\n"
     prompt += f"Incorrect: {query}\n"
-    prompt += f"Correct:"
+    prompt += f"Correct: "
     
     return prompt
 
@@ -133,8 +133,7 @@ def generate_correction(ex1_inc, ex1_corr, ex1_rule, ex2_inc, ex2_corr, ex2_rule
         outputs = model.generate(
             inputs.input_ids,
             max_length=128,
-            num_beams=4,
-            temperature=0.7,
+            num_beams=5,
             do_sample=False,
             early_stopping=True
         )
@@ -142,10 +141,20 @@ def generate_correction(ex1_inc, ex1_corr, ex1_rule, ex2_inc, ex2_corr, ex2_rule
     # Decode the output
     correction = tokenizer.decode(outputs[0], skip_special_tokens=True)
     
+    # Debug: print the correction
+    print(f"Generated correction: '{correction}'")
+    print(f"Correction length: {len(correction)}")
+    
     # Format the response
-    response = f"**Corrected Sentence:**\n{correction}\n\n"
-    response += f"**Your Input:**\n{query}\n\n"
-    response += "**In-Context Learning Prompt Used:**\n```\n{}\n```".format(prompt)
+    if correction:
+        response = f"**Corrected Sentence:**\n{correction}\n\n"
+        response += f"**Your Input:**\n{query}\n\n"
+        response += "**In-Context Learning Prompt Used:**\n```\n{}\n```".format(prompt + correction)
+    else:
+        response = f"**Warning:** Model produced empty output.\n\n"
+        response += f"**Your Input:**\n{query}\n\n"
+        response += "**Prompt Used:**\n```\n{}\n```\n\n".format(prompt)
+        response += "Try providing clearer examples or simplifying the sentence."
     
     return response
 
