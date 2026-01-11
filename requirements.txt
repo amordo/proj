@@ -1,4 +1,6 @@
 gradio
 transformers
 torch
+sentencepiece
+accelerate
 protobuf
