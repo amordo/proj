@@ -2,6 +2,8 @@
 
 An interactive web application for learning Swedish grammar using **in-context learning** with transformer models. Provide example corrections, and the AI learns the pattern to correct new sentences—no fine-tuning required!
 
+Try it https://huggingface.co/spaces/salemmmm/proj
+
 ## 🎯 What is In-Context Learning?
 
 In-context learning allows language models to learn from examples provided directly in the prompt, without modifying the model's weights. Here's how it works:
